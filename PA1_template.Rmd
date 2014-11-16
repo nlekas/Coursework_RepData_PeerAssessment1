@@ -5,21 +5,97 @@ output:
     keep_md: true
 ---
 
+---------------------
 
-## Loading and preprocessing the data
+## Loading and preprocessing the data    
+```{r}
+    require(plyr)    
+    x <- read.csv("data/activity.csv")
+    x <- mutate(x, pDate = strptime(date, "%Y-%m-%d"))
+    x <- subset(x, select=c(steps, interval, pDate))
+```
 
+---------------------
 
+## What is mean & median total number of steps taken per day?
 
-## What is mean total number of steps taken per day?
+   1. Histogram of the total number of steps taken per day:
+```{r}
+hist(x$steps, xlab="Steps Per Day", ylab="Frequency", main="Number of Steps Taken Per Day")
+```
 
-
+   2. Mean & Median Calculation:
+*Note that NA values were removed. More on the missing values later.*
+```{r computemean}
+mymean <- mean(x$steps, na.rm=TRUE)
+mymedian <- median(x$steps, na.rm=TRUE)
+```
+ - **Mean**: `r mymean`  
+ - **Median**: `r mymedian` 
 
 ## What is the average daily activity pattern?
+   
+   1. Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+```{r}
+int <- ddply(x, .(interval), summarise, mean_interval=mean(steps, na.rm=TRUE))
+plot(int$interval, int$mean_interval, type="l", xlab="5-Minute Interval", ylab="Average Number Of Steps Across All Days" )
+```
 
+   2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r}
+maxsteps <- max(int$mean_interval)
+DFmaxinterval <- subset(int, mean_interval==maxsteps, select=c(interval, mean_interval))
+maxinterval <- DFmaxinterval[,1]
+```
+The interval `r maxinterval` contains the maxium number of steps on average across all days.
 
 
 ## Imputing missing values
 
+   1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs).
+```{r totalmissingvalues}
+bad <- is.na(x$steps)
+missingvalues <- nrow(subset(x, bad))
+```
+   - There are `r missingvalues` number of NAs in the dataset.
+
+   2. Devise a strategy for filling in all of the missing values in the dataset. Then create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+```{r fillna}
+xNAs <- x
+for(i in 1:nrow(xNAs)){
+    if(is.na(xNAs$steps[i])){
+        xNAs$steps[i] <- round(int$mean_interval[which(xNAs$interval[i]==int$interval)], digits=0)
+    }
+}
+```
+
+   3. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+```{r xnasmean}
+hist(xNAs$steps, xlab="Steps Per Day", ylab="Frequency", main="Number of Steps Taken Per Day\n With NAs Filled In With Average Steps For Interval")
+```
+
+```{r computemean_xna}
+mymean2 <- mean(xNAs$steps, na.rm=TRUE)
+mymedian2 <- median(xNAs$steps, na.rm=TRUE)
+meanchange <- mymean-mymean2
+medianchange <- mymedian - mymedian2
+```
+
+ - **Mean**: `r mymean2`  
+ - **Median**: `r mymedian2` 
+ - The impact of filling in the NAs with the mean of all steps for that particular interval from all day is a slight decrease in mean by `r meanchange` while the median shows no change.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part.
+
+   1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+   
+```{r weekday}
+xNAs <- mutate(xNAs, day=weekdays(pDate))
+levels(xNAs$day) <- list(weekday = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"))
+```
+
+   2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+
