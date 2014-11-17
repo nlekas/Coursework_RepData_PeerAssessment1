@@ -9,7 +9,8 @@ output:
 
 ## Loading and preprocessing the data    
 ```{r}
-    require(plyr)    
+    require(plyr) 
+    require(ggplot2)
     x <- read.csv("data/activity.csv")
     x <- mutate(x, pDate = strptime(date, "%Y-%m-%d"))
     x <- subset(x, select=c(steps, interval, pDate))
@@ -94,8 +95,18 @@ For this part the weekdays() function may be of some help here. Use the dataset 
    
 ```{r weekday}
 xNAs <- mutate(xNAs, day=weekdays(pDate))
-levels(xNAs$day) <- list(weekday = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"))
+days1 <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+days2 <-c("Weekend", rep("Weekday", 5), "Weekend")
+
+xNAs$day <- factor(xNAs$day, levels=days1)
+xNAs$day <- mutate(xNAs, dayofweek=factor(day, levels=days2[day]))
+
 ```
 
    2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+   
+```{r panelplot}
+ggplot()
+```
+
 
